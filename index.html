@@ -286,7 +286,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.86rem;border-top:1p
       <label><input type="checkbox" id="nt"> 시간 모름</label>
       <label><input type="checkbox" id="dst"> 서머타임 기간 출생</label>
     </div>
-    <button class="btn fill full" type="submit">사주 풀이하기</button>
+    <button class="btn fill full" type="button" id="go">사주 풀이하기</button>
   </form>
   <p class="err" id="err" hidden></p>
   <div id="out" style="display:grid;gap:34px;scroll-margin-top:60px"></div>
@@ -849,11 +849,19 @@ function fill(o){document.getElementById('nm').value=o.name||'';document.getElem
   document.getElementById('bd').value=o.date;document.getElementById('bt').value=o.time||'';document.getElementById('nt').checked=!!o.noTime;document.getElementById('dst').checked=!!o.dst;
   document.getElementById('bt').disabled=!!o.noTime;}
 document.getElementById('nt').addEventListener('change',e=>{document.getElementById('bt').disabled=e.target.checked;});
-document.getElementById('f').addEventListener('submit',e=>{e.preventDefault();const o=readForm(),err=document.getElementById('err');
+function go(){const o=readForm(),err=document.getElementById('err'),btn=document.getElementById('go');
   const y=+o.date.slice(0,4);
-  if(!o.date||y<1900||y>2099){err.textContent='생년월일을 1900~2099년 사이로 입력해 주세요.';err.hidden=false;return;}
-  if(!o.noTime&&!o.time){err.textContent='태어난 시각을 입력하거나 "시간 모름"을 체크해 주세요.';err.hidden=false;return;}
-  err.hidden=true;render(o);document.getElementById('out').scrollIntoView({behavior:'smooth',block:'start'});});
+  const fail=m=>{err.textContent=m;err.hidden=false;err.scrollIntoView({behavior:'smooth',block:'center'});};
+  if(!o.date||y<1900||y>2099) return fail('생년월일을 1900~2099년 사이로 입력해 주세요.');
+  if(!o.noTime&&!o.time) return fail('태어난 시각을 입력하거나 "시간 모름"을 체크해 주세요.');
+  err.hidden=true;
+  try{render(o);}catch(ex){return fail('풀이 중 문제가 생겼어요. 입력값을 확인하고 다시 눌러 주세요.');}
+  btn.textContent='풀이 완료 · 아래로 이동';setTimeout(()=>{btn.textContent='사주 풀이하기';},2000);
+  document.getElementById('out').scrollIntoView({behavior:'smooth',block:'start'});}
+document.getElementById('go').addEventListener('click',go);
+document.getElementById('f').addEventListener('submit',e=>{e.preventDefault();go();});
+document.querySelectorAll('#f input').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go();}}));
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const t=document.getElementById(a.getAttribute('href').slice(1));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth',block:'start'});}}));
 
 document.getElementById('tMeta').innerHTML='<thead><tr><th>일간</th><th>오행</th><th>자연</th><th>기질</th></tr></thead><tbody>'+
   S.map((s,i)=>`<tr><td class="hz e${sEl(i)}">${SH[i]} <span style="font-size:.85rem">${s}</span></td><td style="white-space:nowrap">${i%2?'음':'양'}${EL[sEl(i)]}</td><td style="white-space:nowrap"><b>${DAY[i].m}</b></td><td>${DAY[i].one}. ${DAY[i].core.split('. ')[1]||''}</td></tr>`).join('')+'</tbody>';
